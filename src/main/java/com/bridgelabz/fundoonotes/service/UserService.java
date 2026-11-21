@@ -29,6 +29,6 @@ public class UserService {
     }
 
     private ProfileResponse response(AppUser user) {
-        return new ProfileResponse(user.getId(), user.getName(), user.getEmail());
+        return new ProfileResponse(user.getId(), user.getName(), user.getEmail(), user.isVerified());
     }
 }

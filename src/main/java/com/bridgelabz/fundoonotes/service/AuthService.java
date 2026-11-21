@@ -22,13 +22,16 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtEncoder jwtEncoder;
+    private final AccountService accountService;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager, JwtEncoder jwtEncoder) {
+                       AuthenticationManager authenticationManager, JwtEncoder jwtEncoder,
+                       AccountService accountService) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtEncoder = jwtEncoder;
+        this.accountService = accountService;
     }
 
     public Long register(RegisterRequest request) {
@@ -37,7 +40,9 @@ public class AuthService {
         }
         AppUser user = new AppUser(request.name(), request.email(),
                 passwordEncoder.encode(request.password()));
-        return users.save(user).getId();
+        AppUser saved = users.save(user);
+        accountService.sendVerification(saved);
+        return saved.getId();
     }
 
     public String login(LoginRequest request) {

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -35,8 +36,9 @@ public class NoteController {
     }
 
     @GetMapping
-    public List<NoteResponse> list(@AuthenticationPrincipal Jwt jwt) {
-        return service.list(jwt.getSubject());
+    public List<NoteResponse> list(@RequestParam(required = false) String search,
+                                   @AuthenticationPrincipal Jwt jwt) {
+        return service.list(jwt.getSubject(), search);
     }
 
     @GetMapping("/trash")

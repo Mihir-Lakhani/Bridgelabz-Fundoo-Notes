@@ -119,6 +119,25 @@ class NoteCrudTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.labels").isEmpty());
     }
 
+    @Test
+    void reminderCanBeSetReadAndRemoved() throws Exception {
+        String user = registerAndLogin("reminder@example.com");
+        String created = mvc.perform(post("/api/notes").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Appointment\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = json.readTree(created).get("id").asLong();
+        mvc.perform(put("/api/notes/{id}/reminder", id).header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reminderAt\":\"2030-01-01T09:00:00Z\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reminderAt").value("2030-01-01T09:00:00Z"));
+        mvc.perform(get("/api/notes/{id}", id).header("Authorization", user))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reminderAt").value("2030-01-01T09:00:00Z"));
+        mvc.perform(delete("/api/notes/{id}/reminder", id).header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.reminderAt").doesNotExist());
+    }
+
     private String registerAndLogin(String email) throws Exception {
         mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Student\",\"email\":\"" + email + "\",\"password\":\"password123\"}"))

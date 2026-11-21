@@ -10,6 +10,7 @@ import com.bridgelabz.fundoonotes.repository.NoteRepository;
 import com.bridgelabz.fundoonotes.repository.UserRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -101,6 +102,19 @@ public class NoteService {
     public NoteResponse removeLabel(Long noteId, Long labelId, String email) {
         Note note = ownedNote(noteId, email);
         note.getLabels().removeIf(label -> label.getId().equals(labelId));
+        return NoteResponse.from(notes.save(note));
+    }
+
+    public NoteResponse setReminder(Long id, Instant reminderAt, String email) {
+        Note note = ownedNote(id, email);
+        if (note.isTrashed()) throw new IllegalArgumentException("Restore the note before setting a reminder");
+        note.setReminderAt(reminderAt);
+        return NoteResponse.from(notes.save(note));
+    }
+
+    public NoteResponse removeReminder(Long id, String email) {
+        Note note = ownedNote(id, email);
+        note.setReminderAt(null);
         return NoteResponse.from(notes.save(note));
     }
 }

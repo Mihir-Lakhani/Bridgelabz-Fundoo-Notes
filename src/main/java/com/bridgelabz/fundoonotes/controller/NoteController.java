@@ -2,6 +2,7 @@ package com.bridgelabz.fundoonotes.controller;
 
 import com.bridgelabz.fundoonotes.dto.NoteRequest;
 import com.bridgelabz.fundoonotes.dto.NoteResponse;
+import com.bridgelabz.fundoonotes.dto.ReminderRequest;
 import com.bridgelabz.fundoonotes.service.NoteService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -88,5 +89,16 @@ public class NoteController {
     public NoteResponse removeLabel(@PathVariable Long id, @PathVariable Long labelId,
                                     @AuthenticationPrincipal Jwt jwt) {
         return service.removeLabel(id, labelId, jwt.getSubject());
+    }
+
+    @PutMapping("/{id}/reminder")
+    public NoteResponse setReminder(@PathVariable Long id, @Valid @RequestBody ReminderRequest request,
+                                    @AuthenticationPrincipal Jwt jwt) {
+        return service.setReminder(id, request.reminderAt(), jwt.getSubject());
+    }
+
+    @DeleteMapping("/{id}/reminder")
+    public NoteResponse removeReminder(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return service.removeReminder(id, jwt.getSubject());
     }
 }

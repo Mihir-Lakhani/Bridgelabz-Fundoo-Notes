@@ -1,6 +1,6 @@
-package com.bridgelabz.fundoonotes.auth;
+package com.bridgelabz.fundoonotes.config;
 
-import com.bridgelabz.fundoonotes.user.UserRepository;
+import com.bridgelabz.fundoonotes.repository.UserRepository;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

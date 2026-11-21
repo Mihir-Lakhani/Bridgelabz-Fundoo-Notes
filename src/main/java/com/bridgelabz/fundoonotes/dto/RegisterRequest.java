@@ -1,4 +1,4 @@
-package com.bridgelabz.fundoonotes.auth;
+package com.bridgelabz.fundoonotes.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

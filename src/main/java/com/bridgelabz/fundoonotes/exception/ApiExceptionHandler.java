@@ -1,6 +1,7 @@
 package com.bridgelabz.fundoonotes.exception;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,6 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<Map<String, String>> notFound(Exception error) {
+        return ResponseEntity.status(404).body(Map.of("error", error.getMessage()));
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> badCredentials() {
         return ResponseEntity.status(401).body(Map.of("error", "Invalid email or password"));

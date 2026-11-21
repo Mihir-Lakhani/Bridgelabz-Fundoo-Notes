@@ -1,6 +1,6 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.entity;
 
-import com.bridgelabz.fundoonotes.user.AppUser;
+import com.bridgelabz.fundoonotes.entity.AppUser;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;

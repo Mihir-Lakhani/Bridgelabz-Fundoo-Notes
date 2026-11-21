@@ -1,4 +1,6 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.dto;
+
+import com.bridgelabz.fundoonotes.entity.Note;
 
 import java.time.LocalDateTime;
 import java.util.Set;

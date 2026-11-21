@@ -1,4 +1,4 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

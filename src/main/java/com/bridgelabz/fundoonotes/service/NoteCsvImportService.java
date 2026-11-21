@@ -7,10 +7,14 @@ import com.bridgelabz.fundoonotes.repository.UserRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 @Service
 public class NoteCsvImportService {
@@ -25,18 +29,19 @@ public class NoteCsvImportService {
     public void importFile(Path file, String email) throws IOException {
         AppUser owner = users.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
-        List<String> lines = Files.readAllLines(file);
-        if (lines.isEmpty() || !lines.getFirst().trim().equalsIgnoreCase("title,description")) {
-            throw new IllegalArgumentException("CSV header must be title,description");
-        }
         List<Note> imported = new ArrayList<>();
-        for (int index = 1; index < lines.size(); index++) {
-            if (lines.get(index).isBlank()) continue;
-            String[] columns = lines.get(index).split(",", 2);
-            if (columns.length != 2 || columns[0].isBlank()) {
-                throw new IllegalArgumentException("Invalid CSV row " + (index + 1));
+        try (Reader reader = Files.newBufferedReader(file);
+             CSVParser csv = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true)
+                     .get().parse(reader)) {
+            if (!csv.getHeaderNames().equals(List.of("title", "description"))) {
+                throw new IllegalArgumentException("CSV header must be title,description");
             }
-            imported.add(new Note(columns[0].trim(), columns[1].trim(), owner));
+            for (CSVRecord row : csv) {
+                if (row.size() != 2 || row.get("title").isBlank()) {
+                    throw new IllegalArgumentException("Invalid CSV row " + row.getRecordNumber());
+                }
+                imported.add(new Note(row.get("title").trim(), row.get("description"), owner));
+            }
         }
         notes.saveAll(imported);
     }

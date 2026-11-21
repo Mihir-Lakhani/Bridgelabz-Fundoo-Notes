@@ -35,21 +35,47 @@ public class NoteService {
     }
 
     public List<NoteResponse> list(String email) {
-        return notes.findByOwnerId(owner(email).getId()).stream().map(NoteResponse::from).toList();
+        return notes.findByOwnerId(owner(email).getId()).stream()
+                .filter(note -> !note.isTrashed()).map(NoteResponse::from).toList();
     }
 
     public NoteResponse get(Long id, String email) {
-        return NoteResponse.from(ownedNote(id, email));
+        Note note = ownedNote(id, email);
+        if (note.isTrashed()) throw new NoSuchElementException("Note not found");
+        return NoteResponse.from(note);
     }
 
     public NoteResponse update(Long id, NoteRequest request, String email) {
         Note note = ownedNote(id, email);
+        if (note.isTrashed()) throw new NoSuchElementException("Note not found");
         note.setTitle(request.title());
         note.setDescription(request.description());
         return NoteResponse.from(notes.save(note));
     }
 
     public void delete(Long id, String email) {
-        notes.delete(ownedNote(id, email));
+        setState(id, "trash", true, email);
+    }
+
+    public List<NoteResponse> trash(String email) {
+        return notes.findByOwnerId(owner(email).getId()).stream()
+                .filter(Note::isTrashed).map(NoteResponse::from).toList();
+    }
+
+    public NoteResponse setState(Long id, String state, boolean enabled, String email) {
+        Note note = ownedNote(id, email);
+        switch (state) {
+            case "pin" -> note.setPinned(enabled);
+            case "archive" -> note.setArchived(enabled);
+            case "trash" -> note.setTrashed(enabled);
+            default -> throw new IllegalArgumentException("Unknown note state");
+        }
+        return NoteResponse.from(notes.save(note));
+    }
+
+    public void deletePermanently(Long id, String email) {
+        Note note = ownedNote(id, email);
+        if (!note.isTrashed()) throw new IllegalArgumentException("Move the note to trash first");
+        notes.delete(note);
     }
 }

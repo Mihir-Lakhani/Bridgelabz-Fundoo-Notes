@@ -11,6 +11,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +46,37 @@ class NoteCrudTest {
                 .andExpect(status().isNoContent());
         mvc.perform(get("/api/notes/{id}", id).header("Authorization", alice))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void noteCanBePinnedArchivedTrashedRestoredAndPermanentlyDeleted() throws Exception {
+        String user = registerAndLogin("lifecycle@example.com");
+        String created = mvc.perform(post("/api/notes").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Plan\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = json.readTree(created).get("id").asLong();
+
+        mvc.perform(patch("/api/notes/{id}/pin", id).header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.pinned").value(true));
+        mvc.perform(patch("/api/notes/{id}/archive", id).header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.archived").value(true));
+        mvc.perform(delete("/api/notes/{id}", id).header("Authorization", user))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/notes/trash").header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(id));
+        mvc.perform(patch("/api/notes/{id}/trash", id).header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.trashed").value(false));
+        mvc.perform(get("/api/notes/{id}", id).header("Authorization", user))
+                .andExpect(status().isOk());
+        mvc.perform(delete("/api/notes/{id}", id).header("Authorization", user))
+                .andExpect(status().isNoContent());
+        mvc.perform(delete("/api/notes/{id}/permanent", id).header("Authorization", user))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/notes/trash").header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
     }
 
     private String registerAndLogin(String email) throws Exception {

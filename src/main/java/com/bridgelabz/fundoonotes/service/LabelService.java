@@ -10,6 +10,8 @@ import com.bridgelabz.fundoonotes.repository.UserRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Service
 public class LabelService {
@@ -27,6 +29,7 @@ public class LabelService {
         return users.findByEmail(email).orElseThrow(() -> new NoSuchElementException("User not found"));
     }
 
+    @CacheEvict(cacheNames = "labels", key = "#email")
     public LabelResponse create(String name, String email) {
         AppUser user = owner(email);
         String cleanName = name.trim();
@@ -36,10 +39,12 @@ public class LabelService {
         return LabelResponse.from(labels.save(new Label(cleanName, user)));
     }
 
+    @Cacheable(cacheNames = "labels", key = "#email")
     public List<LabelResponse> list(String email) {
         return labels.findByOwnerId(owner(email).getId()).stream().map(LabelResponse::from).toList();
     }
 
+    @CacheEvict(cacheNames = "labels", key = "#email")
     public void delete(Long id, String email) {
         Long ownerId = owner(email).getId();
         Label label = labels.findByIdAndOwnerId(id, ownerId)

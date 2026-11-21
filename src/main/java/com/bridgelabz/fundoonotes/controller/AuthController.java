@@ -1,6 +1,7 @@
 package com.bridgelabz.fundoonotes.controller;
 
 import com.bridgelabz.fundoonotes.dto.RegisterRequest;
+import com.bridgelabz.fundoonotes.dto.LoginRequest;
 import com.bridgelabz.fundoonotes.service.AuthService;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -23,5 +24,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, Long>> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", service.register(request)));
+    }
+
+    @PostMapping("/login")
+    public Map<String, String> login(@Valid @RequestBody LoginRequest request) {
+        return Map.of("token", service.login(request));
     }
 }

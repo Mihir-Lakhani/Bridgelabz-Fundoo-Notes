@@ -24,4 +24,5 @@ public class AppUser {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getPassword() { return password; }
+    public void setName(String name) { this.name = name; }
 }

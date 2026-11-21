@@ -12,7 +12,9 @@ A Spring Boot notes backend built step by step for learning.
 
 Use Java 21 or newer and run `mvn spring-boot:run` from the `develop` branch.
 The H2 database is stored in `data/`. For a shared or deployed copy, set the
-`FUNDOO_JWT_SECRET` environment variable to a long random secret.
+`FUNDOO_JWT_SECRET` environment variable to a long random secret. Without it,
+the app generates a temporary secret at startup, so existing tokens expire when
+the app restarts.
 
 Register with `POST /api/auth/register` using `name`, `email`, and `password`.
 Log in with `POST /api/auth/login` using `email` and `password`.

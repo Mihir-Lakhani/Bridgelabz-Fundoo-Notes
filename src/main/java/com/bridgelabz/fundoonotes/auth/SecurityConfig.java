@@ -22,6 +22,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 
 @Configuration
 public class SecurityConfig {
@@ -45,6 +46,11 @@ public class SecurityConfig {
 
     @Bean
     SecretKey jwtKey(@Value("${fundoo.jwt.secret}") String secret) {
+        if (secret.isBlank()) {
+            byte[] temporaryKey = new byte[32];
+            new SecureRandom().nextBytes(temporaryKey);
+            return new SecretKeySpec(temporaryKey, "HmacSHA256");
+        }
         return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 

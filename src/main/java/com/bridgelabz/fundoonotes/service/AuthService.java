@@ -1,7 +1,13 @@
-package com.bridgelabz.fundoonotes.auth;
+package com.bridgelabz.fundoonotes.service;
 
-import com.bridgelabz.fundoonotes.user.AppUser;
-import com.bridgelabz.fundoonotes.user.UserRepository;
+import com.bridgelabz.fundoonotes.dto.LoginRequest;
+import com.bridgelabz.fundoonotes.dto.RegisterRequest;
+
+import com.bridgelabz.fundoonotes.dto.LoginRequest;
+import com.bridgelabz.fundoonotes.dto.RegisterRequest;
+
+import com.bridgelabz.fundoonotes.entity.AppUser;
+import com.bridgelabz.fundoonotes.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;

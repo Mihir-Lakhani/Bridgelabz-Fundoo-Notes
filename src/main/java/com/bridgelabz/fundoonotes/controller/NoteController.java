@@ -1,4 +1,8 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.controller;
+
+import com.bridgelabz.fundoonotes.service.NoteService;
+import com.bridgelabz.fundoonotes.dto.NoteRequest;
+import com.bridgelabz.fundoonotes.dto.NoteResponse;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

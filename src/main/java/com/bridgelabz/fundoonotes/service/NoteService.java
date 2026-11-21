@@ -1,7 +1,12 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.service;
 
-import com.bridgelabz.fundoonotes.user.AppUser;
-import com.bridgelabz.fundoonotes.user.UserRepository;
+import com.bridgelabz.fundoonotes.entity.Note;
+import com.bridgelabz.fundoonotes.dto.NoteRequest;
+import com.bridgelabz.fundoonotes.dto.NoteResponse;
+import com.bridgelabz.fundoonotes.repository.NoteRepository;
+
+import com.bridgelabz.fundoonotes.entity.AppUser;
+import com.bridgelabz.fundoonotes.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;

@@ -1,6 +1,6 @@
 package com.bridgelabz.fundoonotes;
 
-import com.bridgelabz.fundoonotes.user.UserRepository;
+import com.bridgelabz.fundoonotes.repository.UserRepository;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

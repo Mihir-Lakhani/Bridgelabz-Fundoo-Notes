@@ -1,4 +1,4 @@
-package com.bridgelabz.fundoonotes.user;
+package com.bridgelabz.fundoonotes.entity;
 
 import jakarta.persistence.*;
 

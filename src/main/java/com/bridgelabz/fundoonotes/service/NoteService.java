@@ -34,9 +34,14 @@ public class NoteService {
         return NoteResponse.from(notes.save(note));
     }
 
-    public List<NoteResponse> list(String email) {
+    public List<NoteResponse> list(String email, String search) {
         return notes.findByOwnerId(owner(email).getId()).stream()
-                .filter(note -> !note.isTrashed()).map(NoteResponse::from).toList();
+                .filter(note -> !note.isTrashed())
+                .filter(note -> search == null || search.isBlank()
+                        || note.getTitle().toLowerCase().contains(search.toLowerCase())
+                        || (note.getDescription() != null
+                        && note.getDescription().toLowerCase().contains(search.toLowerCase())))
+                .map(NoteResponse::from).toList();
     }
 
     public NoteResponse get(Long id, String email) {

@@ -79,6 +79,23 @@ class NoteCrudTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
     }
 
+    @Test
+    void searchMatchesTitleOrDescriptionOnlyForOwner() throws Exception {
+        String user = registerAndLogin("search@example.com");
+        mvc.perform(post("/api/notes").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Shopping\",\"description\":\"Buy milk\"}"))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/notes").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Work\",\"description\":\"Call team\"}"))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/notes").param("search", "MILK").header("Authorization", user))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Shopping"))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
     private String registerAndLogin(String email) throws Exception {
         mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Student\",\"email\":\"" + email + "\",\"password\":\"password123\"}"))

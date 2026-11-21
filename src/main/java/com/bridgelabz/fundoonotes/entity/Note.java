@@ -47,6 +47,7 @@ public class Note {
     public boolean isArchived() { return archived; }
     public boolean isTrashed() { return trashed; }
     public Instant getTrashedAt() { return trashedAt; }
+    public void setTrashedAt(Instant trashedAt) { this.trashedAt = trashedAt; }
     public Instant getReminderAt() { return reminderAt; }
     public boolean isReminderSent() { return reminderSent; }
     public boolean isReminderQueued() { return reminderQueued; }

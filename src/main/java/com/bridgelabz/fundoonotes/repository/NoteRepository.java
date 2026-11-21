@@ -11,4 +11,5 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     Optional<Note> findByIdAndOwnerId(Long id, Long ownerId);
     List<Note> findByReminderAtLessThanEqualAndReminderSentFalseAndTrashedFalse(Instant now);
     List<Note> findByReminderAtLessThanEqualAndReminderQueuedFalseAndReminderSentFalseAndTrashedFalse(Instant now);
+    List<Note> findByTrashedTrueAndTrashedAtBefore(Instant cutoff);
 }

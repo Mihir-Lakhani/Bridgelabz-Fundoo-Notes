@@ -2,6 +2,11 @@
 
 A Spring Boot notes backend built step by step for learning.
 
+## Project structure
+
+Code is grouped by layer, like the Hospital Management System project:
+`config`, `controller`, `dto`, `entity`, `exception`, `repository`, and `service`.
+
 ## Use cases
 
 - UC01: Register users with a BCrypt password and log in to receive a JWT.

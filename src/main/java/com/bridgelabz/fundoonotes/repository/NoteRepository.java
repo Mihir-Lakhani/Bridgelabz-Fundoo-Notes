@@ -1,4 +1,6 @@
-package com.bridgelabz.fundoonotes.note;
+package com.bridgelabz.fundoonotes.repository;
+
+import com.bridgelabz.fundoonotes.entity.Note;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;

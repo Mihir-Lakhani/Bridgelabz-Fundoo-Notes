@@ -1,4 +1,8 @@
-package com.bridgelabz.fundoonotes.auth;
+package com.bridgelabz.fundoonotes.controller;
+
+import com.bridgelabz.fundoonotes.service.AuthService;
+import com.bridgelabz.fundoonotes.dto.LoginRequest;
+import com.bridgelabz.fundoonotes.dto.RegisterRequest;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.bridgelabz.fundoonotes;
+package com.bridgelabz.fundoonotes.exception;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;

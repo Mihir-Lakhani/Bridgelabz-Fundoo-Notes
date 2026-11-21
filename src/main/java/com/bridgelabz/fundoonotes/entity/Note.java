@@ -26,6 +26,7 @@ public class Note {
     private Instant trashedAt;
     private Instant reminderAt;
     private boolean reminderSent;
+    private boolean reminderQueued;
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Label> labels = new HashSet<>();
     @ManyToOne(optional = false)
@@ -48,6 +49,7 @@ public class Note {
     public Instant getTrashedAt() { return trashedAt; }
     public Instant getReminderAt() { return reminderAt; }
     public boolean isReminderSent() { return reminderSent; }
+    public boolean isReminderQueued() { return reminderQueued; }
     public AppUser getOwner() { return owner; }
     public Set<Label> getLabels() { return labels; }
     public void setTitle(String title) { this.title = title; }
@@ -55,12 +57,15 @@ public class Note {
     public void setReminderAt(Instant reminderAt) {
         this.reminderAt = reminderAt;
         this.reminderSent = false;
+        this.reminderQueued = false;
     }
     public void setReminderSent(boolean reminderSent) { this.reminderSent = reminderSent; }
+    public void setReminderQueued(boolean reminderQueued) { this.reminderQueued = reminderQueued; }
     public void setPinned(boolean pinned) { this.pinned = pinned; }
     public void setArchived(boolean archived) { this.archived = archived; }
     public void setTrashed(boolean trashed) {
         this.trashed = trashed;
         this.trashedAt = trashed ? Instant.now() : null;
+        if (!trashed && !reminderSent) this.reminderQueued = false;
     }
 }

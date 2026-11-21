@@ -5,8 +5,10 @@ import com.bridgelabz.fundoonotes.repository.NoteRepository;
 import java.time.Instant;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Profile;
 
 @Service
+@Profile("!rabbit")
 public class ReminderNotificationService {
     private final NoteRepository notes;
     private final MailService mail;

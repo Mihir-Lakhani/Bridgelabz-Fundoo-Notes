@@ -5,6 +5,8 @@ import com.bridgelabz.fundoonotes.entity.Note;
 import com.bridgelabz.fundoonotes.repository.NoteRepository;
 import com.bridgelabz.fundoonotes.repository.UserRepository;
 import com.bridgelabz.fundoonotes.service.ReminderNotificationService;
+import com.bridgelabz.fundoonotes.service.RabbitReminderConsumer;
+import com.bridgelabz.fundoonotes.service.MailService;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ class ReminderNotificationTest {
     @Autowired UserRepository users;
     @Autowired NoteRepository notes;
     @Autowired ReminderNotificationService reminders;
+    @Autowired MailService mail;
 
     @Test
     void dueReminderIsMarkedSent() {
@@ -26,6 +29,18 @@ class ReminderNotificationTest {
         Long id = notes.save(note).getId();
 
         reminders.sendDueReminders();
+
+        assertTrue(notes.findById(id).orElseThrow().isReminderSent());
+    }
+
+    @Test
+    void rabbitConsumerHandlesNoteIdAndMarksReminderSent() {
+        AppUser user = users.save(new AppUser("Mihir", "rabbit@example.com", "encoded-password"));
+        Note note = new Note("Rabbit reminder", null, user);
+        note.setReminderAt(Instant.now().minusSeconds(60));
+        Long id = notes.save(note).getId();
+
+        new RabbitReminderConsumer(notes, mail).sendReminder(id.toString());
 
         assertTrue(notes.findById(id).orElseThrow().isReminderSent());
     }

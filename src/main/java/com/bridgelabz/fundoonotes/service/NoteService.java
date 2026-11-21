@@ -4,6 +4,8 @@ import com.bridgelabz.fundoonotes.dto.NoteRequest;
 import com.bridgelabz.fundoonotes.dto.NoteResponse;
 import com.bridgelabz.fundoonotes.entity.AppUser;
 import com.bridgelabz.fundoonotes.entity.Note;
+import com.bridgelabz.fundoonotes.entity.Label;
+import com.bridgelabz.fundoonotes.repository.LabelRepository;
 import com.bridgelabz.fundoonotes.repository.NoteRepository;
 import com.bridgelabz.fundoonotes.repository.UserRepository;
 import java.util.List;
@@ -14,10 +16,12 @@ import org.springframework.stereotype.Service;
 public class NoteService {
     private final NoteRepository notes;
     private final UserRepository users;
+    private final LabelRepository labels;
 
-    public NoteService(NoteRepository notes, UserRepository users) {
+    public NoteService(NoteRepository notes, UserRepository users, LabelRepository labels) {
         this.notes = notes;
         this.users = users;
+        this.labels = labels;
     }
 
     private AppUser owner(String email) {
@@ -34,13 +38,15 @@ public class NoteService {
         return NoteResponse.from(notes.save(note));
     }
 
-    public List<NoteResponse> list(String email, String search) {
+    public List<NoteResponse> list(String email, String search, String label) {
         return notes.findByOwnerId(owner(email).getId()).stream()
                 .filter(note -> !note.isTrashed())
                 .filter(note -> search == null || search.isBlank()
                         || note.getTitle().toLowerCase().contains(search.toLowerCase())
                         || (note.getDescription() != null
                         && note.getDescription().toLowerCase().contains(search.toLowerCase())))
+                .filter(note -> label == null || note.getLabels().stream()
+                        .anyMatch(item -> item.getName().equalsIgnoreCase(label)))
                 .map(NoteResponse::from).toList();
     }
 
@@ -82,5 +88,19 @@ public class NoteService {
         Note note = ownedNote(id, email);
         if (!note.isTrashed()) throw new IllegalArgumentException("Move the note to trash first");
         notes.delete(note);
+    }
+
+    public NoteResponse addLabel(Long noteId, Long labelId, String email) {
+        Note note = ownedNote(noteId, email);
+        Label label = labels.findByIdAndOwnerId(labelId, owner(email).getId())
+                .orElseThrow(() -> new NoSuchElementException("Label not found"));
+        note.getLabels().add(label);
+        return NoteResponse.from(notes.save(note));
+    }
+
+    public NoteResponse removeLabel(Long noteId, Long labelId, String email) {
+        Note note = ownedNote(noteId, email);
+        note.getLabels().removeIf(label -> label.getId().equals(labelId));
+        return NoteResponse.from(notes.save(note));
     }
 }

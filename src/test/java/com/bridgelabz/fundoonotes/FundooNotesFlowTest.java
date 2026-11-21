@@ -34,7 +34,7 @@ class FundooNotesFlowTest {
 
         String created = mvc.perform(post("/api/notes").header("Authorization", "Bearer " + aliceToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"Private note\",\"description\":\"Hello\"}"))
+                        .content("{\"title\":\"Private note\",\"description\":\"Hello\",\"labels\":[\"work\"],\"reminderAt\":\"2026-12-01T09:00:00\"}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long id = json.readTree(created).get("id").asLong();
 
@@ -42,6 +42,9 @@ class FundooNotesFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.title").value("Private note"));
         mvc.perform(get("/api/notes/{id}", id).header("Authorization", "Bearer " + bobToken))
                 .andExpect(status().isNotFound());
+        mvc.perform(get("/api/notes").param("label", "work")
+                        .header("Authorization", "Bearer " + aliceToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].title").value("Private note"));
     }
 
     private void register(String email) throws Exception {

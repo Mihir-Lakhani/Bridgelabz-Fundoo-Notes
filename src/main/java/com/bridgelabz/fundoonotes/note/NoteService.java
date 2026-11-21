@@ -26,13 +26,18 @@ public class NoteService {
     }
 
     public NoteResponse create(NoteRequest request, String email) {
-        return NoteResponse.from(notes.save(new Note(request.title(), request.description(), owner(email))));
+        Note note = new Note(request.title(), request.description(), owner(email));
+        note.setLabels(request.labels());
+        note.setReminderAt(request.reminderAt());
+        return NoteResponse.from(notes.save(note));
     }
 
-    public List<NoteResponse> list(String email, String search) {
+    public List<NoteResponse> list(String email, String search, String label, Boolean archived) {
         return notes.findByOwnerIdAndTrashedFalse(owner(email).getId()).stream()
                 .filter(note -> search == null || note.getTitle().toLowerCase().contains(search.toLowerCase())
                         || (note.getDescription() != null && note.getDescription().toLowerCase().contains(search.toLowerCase())))
+                .filter(note -> label == null || note.getLabels().contains(label))
+                .filter(note -> archived == null || note.isArchived() == archived)
                 .map(NoteResponse::from).toList();
     }
 
@@ -42,6 +47,8 @@ public class NoteService {
         Note note = ownedNote(id, email);
         note.setTitle(request.title());
         note.setDescription(request.description());
+        note.setLabels(request.labels());
+        note.setReminderAt(request.reminderAt());
         return NoteResponse.from(notes.save(note));
     }
 

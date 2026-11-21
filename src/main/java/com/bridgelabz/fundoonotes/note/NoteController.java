@@ -20,8 +20,11 @@ public class NoteController {
     }
 
     @GetMapping
-    public List<NoteResponse> list(@RequestParam(required = false) String search, @AuthenticationPrincipal Jwt jwt) {
-        return service.list(jwt.getSubject(), search);
+    public List<NoteResponse> list(@RequestParam(required = false) String search,
+                                   @RequestParam(required = false) String label,
+                                   @RequestParam(required = false) Boolean archived,
+                                   @AuthenticationPrincipal Jwt jwt) {
+        return service.list(jwt.getSubject(), search, label, archived);
     }
 
     @GetMapping("/{id}")

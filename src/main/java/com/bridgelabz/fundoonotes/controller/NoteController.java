@@ -37,8 +37,9 @@ public class NoteController {
 
     @GetMapping
     public List<NoteResponse> list(@RequestParam(required = false) String search,
+                                   @RequestParam(required = false) String label,
                                    @AuthenticationPrincipal Jwt jwt) {
-        return service.list(jwt.getSubject(), search);
+        return service.list(jwt.getSubject(), search, label);
     }
 
     @GetMapping("/trash")
@@ -76,4 +77,16 @@ public class NoteController {
     }
 
     public record StateRequest(boolean enabled) { }
+
+    @PutMapping("/{id}/labels/{labelId}")
+    public NoteResponse addLabel(@PathVariable Long id, @PathVariable Long labelId,
+                                 @AuthenticationPrincipal Jwt jwt) {
+        return service.addLabel(id, labelId, jwt.getSubject());
+    }
+
+    @DeleteMapping("/{id}/labels/{labelId}")
+    public NoteResponse removeLabel(@PathVariable Long id, @PathVariable Long labelId,
+                                    @AuthenticationPrincipal Jwt jwt) {
+        return service.removeLabel(id, labelId, jwt.getSubject());
+    }
 }

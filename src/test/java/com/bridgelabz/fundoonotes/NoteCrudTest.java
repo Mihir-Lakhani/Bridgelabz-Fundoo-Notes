@@ -96,6 +96,29 @@ class NoteCrudTest {
                 .andExpect(jsonPath("$.length()").value(1));
     }
 
+    @Test
+    void labelCanBeCreatedAttachedFilteredAndDeleted() throws Exception {
+        String user = registerAndLogin("labels@example.com");
+        String labelJson = mvc.perform(post("/api/labels").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Work\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long labelId = json.readTree(labelJson).get("id").asLong();
+        String noteJson = mvc.perform(post("/api/notes").header("Authorization", user)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Task\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long noteId = json.readTree(noteJson).get("id").asLong();
+
+        mvc.perform(put("/api/notes/{id}/labels/{labelId}", noteId, labelId)
+                .header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.labels[0]").value("Work"));
+        mvc.perform(get("/api/notes").param("label", "work").header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].title").value("Task"));
+        mvc.perform(delete("/api/labels/{id}", labelId).header("Authorization", user))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/notes/{id}", noteId).header("Authorization", user))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.labels").isEmpty());
+    }
+
     private String registerAndLogin(String email) throws Exception {
         mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Student\",\"email\":\"" + email + "\",\"password\":\"password123\"}"))

@@ -17,22 +17,22 @@ Each completed UC was built on its own `feature/uc-*` branch from `develop` and 
 | 07 | Search active notes by title or description | Complete |
 | 08 | Create/delete labels, attach them to notes, and filter notes by label | Complete |
 | 09 | Set, view, and remove a note reminder | Complete |
-| 10 | Send reminder emails when due | Planned |
-| 11 | Redis caching | Planned |
-| 12 | RabbitMQ reminder events | Planned |
-| 13 | AOP logging and timing | Planned |
-| 14 | CSV note import | Planned |
-| 15 | Scheduled Trash cleanup | Planned |
-| 16 | CSV note export | Planned |
-| 17 | API Gateway | Planned |
-| 18 | Final integration checks | Planned |
+| 10 | Send reminder emails when due | Complete; SMTP optional |
+| 11 | Redis caching for labels | Complete; Redis profile optional |
+| 12 | RabbitMQ reminder events | Complete; RabbitMQ profile optional |
+| 13 | AOP activity logging and execution timing | Complete |
+| 14 | Spring Batch CSV note import | Complete |
+| 15 | Scheduled Trash cleanup after 30 days | Complete |
+| 16 | Spring Batch CSV export | Complete |
+| 17 | Separate Spring Cloud API Gateway | Complete |
+| 18 | Integration checks and project finalization | Complete |
 
-The two supplied PDFs are study guides, so this UC sequence is the project's implementation plan. Planned items are not claimed as working code.
+The two supplied PDFs are study guides, so this UC sequence is the project's implementation plan. Redis, RabbitMQ, and SMTP require their respective services to be configured for those integrations to work. Their core logic is tested, but no live Redis, RabbitMQ, or SMTP service is part of the automated test suite.
 
 ## Requirements and run
 
 - Java 21 or newer and Maven (or IntelliJ IDEA's Maven tool window).
-- No external database is needed for UC01–UC09. H2 stores data in the local `data/` folder.
+- No external database is needed. H2 stores data in the local `data/` folder, which Git ignores.
 
 ```bash
 git switch develop
@@ -40,6 +40,15 @@ mvn spring-boot:run
 ```
 
 The API starts on port `8080` by default. Run `mvn test` separately to execute the tests.
+
+To use the separate gateway, start the backend first, then run the gateway in another terminal:
+
+```bash
+cd fundoo-api-gateway
+mvn spring-boot:run
+```
+
+Call the same `/api/**` paths through port `8081`. The gateway forwards requests and bearer tokens to the backend; the backend still checks authentication and ownership. Set `FUNDOO_BACKEND_URL` to change the target; by default the gateway targets `http://localhost:8080`. The gateway has its own `pom.xml`, so run its tests with `mvn -f fundoo-api-gateway/pom.xml test` from the repository root.
 
 For a stable JWT signing key across restarts, set `FUNDOO_JWT_SECRET` to a random value of at least 32 characters. If omitted, the app creates a temporary random key at startup and existing tokens stop working after a restart.
 
@@ -70,8 +79,23 @@ Verification and reset tokens expire after 15 minutes and can be used once. Emai
 - `PUT /api/notes/{id}/labels/{labelId}` attaches a label; `DELETE` on the same path detaches it.
 - `PUT /api/notes/{id}/reminder` with `{"reminderAt":"2030-01-01T09:00:00Z"}` sets a reminder; `DELETE` on the same path removes it.
 
-Every note and label operation checks the authenticated owner. UC09 stores reminder times but does not send reminder emails yet.
+Every note and label operation checks the authenticated owner.
+
+## Reminders, CSV, and optional services
+
+The default app checks due reminders every minute and sends an email. Without SMTP configuration, it writes development emails to the log. Set `spring.mail.host`, port, username, password, and `fundoo.mail.from` to send real email. A reminder is marked sent after processing, so it is not repeatedly sent. Email delivery is not verified by the app.
+
+`POST /api/notes/import` accepts a multipart form field named `file`, with a CSV header `title,description`. `GET /api/notes/export` downloads the signed-in user's active notes as CSV. Both operations run simple Spring Batch jobs. The import accepts quoted commas and newlines; the export preserves them.
+
+Trash cleanup runs once per day and permanently removes notes that have been in Trash for more than 30 days.
+
+Redis and RabbitMQ are optional local profiles:
+
+- `mvn spring-boot:run -Dspring-boot.run.profiles=redis` caches each user's label list in Redis at `localhost:6379` and clears that cache when labels change. Start Redis before enabling this profile.
+- `mvn spring-boot:run -Dspring-boot.run.profiles=rabbit` publishes due reminder IDs to RabbitMQ at `localhost:5672`; a consumer processes the email. Start RabbitMQ before enabling this profile. Without it, the default reminder scheduler sends directly.
+
+The AOP aspect logs note-service activity and execution time. It does not change the note API.
 
 ## Code structure
 
-The Java packages follow the same layer-based layout as the Hospital Management System project: `config`, `controller`, `dto`, `entity`, `exception`, `repository`, and `service`. Controllers accept HTTP requests, services contain the logic, repositories talk to H2, and DTOs control the request and response fields. No Lombok or mapper framework is required.
+The Java packages follow the same layer-based layout as the Hospital Management System project: `config`, `controller`, `dto`, `entity`, `exception`, `repository`, and `service`, with small `batch` and `aop` packages for those features. Controllers accept HTTP requests, services contain the logic, repositories talk to H2, and DTOs control the request and response fields. `fundoo-api-gateway/` is a separate application. No Lombok or mapper framework is required.

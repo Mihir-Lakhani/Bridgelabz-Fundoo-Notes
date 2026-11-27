@@ -85,6 +85,12 @@ mvn spring-boot:run
 
 The gateway starts at `http://localhost:8081` and forwards `/api/**` to `http://localhost:8080`. Set `FUNDOO_BACKEND_URL` if the backend runs elsewhere.
 
+### Connecting a separate frontend
+
+The frontend can live in its own repository. Set its API base URL to `http://localhost:8080` for direct local calls, or `http://localhost:8081` when using the gateway. It should call `POST /api/auth/login`, read the returned `token`, and send `Authorization: Bearer <token>` with protected requests. A missing or expired token results in `401`, so the frontend should return the user to login. The backend token expires after two hours.
+
+A browser frontend on a different origin needs CORS permission. The backend allows local origins on ports `5173` and `3000` by default. Set `FUNDOO_CORS_ALLOWED_ORIGINS` to a comma-separated list of exact frontend origins when the frontend uses other ports or is deployed, for example `https://notes.example.com`. The backend accepts the `Authorization` and `Content-Type` request headers and exposes `Content-Disposition` for CSV downloads. It does not enable cross-origin cookies; authentication uses the bearer token. A same-origin reverse proxy does not need a separate browser CORS allowance.
+
 Set `FUNDOO_JWT_SECRET` to a random secret of at least 32 characters for a stable signing key across restarts. Without it, startup generates a temporary random key and old tokens stop working after restart. For example, in PowerShell:
 
 ```powershell

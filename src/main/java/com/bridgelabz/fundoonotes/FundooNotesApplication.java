@@ -9,5 +9,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class FundooNotesApplication {
     public static void main(String[] args) {
         SpringApplication.run(FundooNotesApplication.class, args);
+
+        System.out.println("BACKEND IS ON");
+
     }
 }

@@ -31,7 +31,7 @@ Each rebuilt UC has its own `feature/uc-*` branch from `develop` and a non-fast-
 | 07 | Search | Find active notes by title or description | Complete |
 | 08 | Labels | Create/delete labels, attach/detach them, filter notes | Complete |
 | 09 | Reminders | Set, view, and remove a reminder time | Complete |
-| 10 | Reminder email | Check due reminders every minute and send email | Complete; SMTP optional |
+| 10 | Reminder email | Check due reminders every minute; clear the reminder after email succeeds | Complete; SMTP required |
 | 11 | Redis | Cache each user's label list and evict on changes | Complete; `redis` profile |
 | 12 | RabbitMQ | Queue due reminder IDs for an email consumer | Complete; `rabbit` profile |
 | 13 | AOP | Log note-service activity and execution time | Complete |
@@ -232,7 +232,7 @@ flowchart TD
     Consume --> Output
     Output -->|Yes| Email["Send email"]
     Output -->|No| Fail["Fail to deliver email"]
-    Email --> Sent["Mark reminder sent"]
+    Email --> Sent["Clear reminder time and mark sent"]
 ```
 
 | Feature | Default | Optional setup / behavior |
@@ -240,13 +240,15 @@ flowchart TD
 | MySQL | `fundoo_notes` database on `127.0.0.1:3306` | Local password file or `FUNDOO_DB_PASSWORD` |
 | H2 | In-memory database for automated tests | No separate test database server |
 | Mail | SMTP required for registration | Configure Spring Mail host, port, credentials, and `fundoo.mail.from`; tests use log-only mode |
-| Reminders | Scheduler checks every 60 seconds and sends directly | `rabbit` profile queues IDs for a consumer |
+| Reminders | Scheduler checks every 60 seconds, emails due reminders, then clears their time | `rabbit` profile queues IDs for a consumer |
 | Redis | No label cache | `redis` profile uses Redis at `localhost:6379`; cache is evicted on label create/delete |
 | RabbitMQ | Not used | `rabbit` profile uses RabbitMQ at `localhost:5672` |
 | Trash cleanup | Runs daily at 02:00 server time | `fundoo.trash.retention-days` defaults to `30` |
 | AOP | Logs note-service activity and duration | No extra service |
 
 For optional profiles, start the corresponding service first. In PowerShell set `$env:SPRING_PROFILES_ACTIVE = "redis"` or `"rabbit"` before `mvn spring-boot:run`. The profiles may be combined. There is no live SMTP, Redis, or RabbitMQ integration test in this repository; the default app and core integration logic are tested without those servers.
+
+A reminder stays scheduled if email delivery fails, so it can be retried. After a successful send, its time is cleared and it disappears from note responses. Reminders marked sent by older versions are also hidden from note responses.
 
 The CSV format is `title,description`. Import requires that exact header; export includes only the authenticated user's non-trashed notes. Quoted commas and newlines round-trip correctly. Spring Batch jobs run for these endpoints.
 

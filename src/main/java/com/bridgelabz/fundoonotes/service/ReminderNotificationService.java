@@ -22,7 +22,7 @@ public class ReminderNotificationService {
     public void sendDueReminders() {
         for (Note note : notes.findByReminderAtLessThanEqualAndReminderSentFalseAndTrashedFalse(Instant.now())) {
             mail.send(note.getOwner().getEmail(), "Note reminder", note.getTitle());
-            note.setReminderSent(true);
+            note.markReminderSent();
             notes.save(note);
         }
     }

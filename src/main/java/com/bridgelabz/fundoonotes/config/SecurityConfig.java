@@ -49,7 +49,8 @@ public class SecurityConfig {
     UserDetailsService userDetailsService(UserRepository users) {
         return email -> users.findByEmail(email)
                 .map(user -> org.springframework.security.core.userdetails.User
-                        .withUsername(user.getEmail()).password(user.getPassword()).roles("USER").build())
+                        .withUsername(user.getEmail()).password(user.getPassword())
+                        .disabled(!user.isVerified()).roles("USER").build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
@@ -85,7 +86,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login",
-                                "/api/auth/verify", "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                                "/api/auth/verify", "/api/auth/resend-verification",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
                 .build();

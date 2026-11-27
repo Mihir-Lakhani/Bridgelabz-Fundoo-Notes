@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,18 +18,28 @@ public class AccountService {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final MailService mail;
+    private final String frontendUrl;
 
     public AccountService(AccountTokenRepository tokens, UserRepository users,
-                          PasswordEncoder passwordEncoder, MailService mail) {
+                          PasswordEncoder passwordEncoder, MailService mail,
+                          @Value("${fundoo.frontend.url:http://localhost:5173}") String frontendUrl) {
         this.tokens = tokens;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.mail = mail;
+        this.frontendUrl = frontendUrl;
     }
 
     public void sendVerification(AppUser user) {
         String token = issue(user, AccountToken.Purpose.VERIFY);
-        mail.send(user.getEmail(), "Verify your email", "Verification token: " + token);
+        String link = frontendUrl + "/verify?token=" + token;
+        mail.send(user.getEmail(), "Verify your Fundoo Notes email",
+                "Open this link within 15 minutes to verify your email:\n" + link);
+    }
+
+    @Transactional
+    public void resendVerification(String email) {
+        users.findByEmail(email).filter(user -> !user.isVerified()).ifPresent(this::sendVerification);
     }
 
     @Transactional

@@ -43,6 +43,12 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody EmailRequest request) {
+        accounts.resendVerification(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgot(@Valid @RequestBody EmailRequest request) {
         accounts.forgotPassword(request.email());

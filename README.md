@@ -8,7 +8,7 @@ A Spring Boot backend for personal notes. The project follows small use cases so
 | --- | --- |
 | Language | Java 21 |
 | Backend | Spring Boot 4.1.2, Spring MVC, Spring Security |
-| Database | H2 file database with Spring Data JPA |
+| Database | MySQL `fundoo_notes` with Spring Data JPA; H2 for tests |
 | Authentication | BCrypt passwords and two-hour HS256 JWTs |
 | Optional integrations | SMTP, Redis, RabbitMQ |
 | Other features | Spring Batch CSV import/export, scheduled jobs, Spring AOP, Spring Cloud Gateway |
@@ -50,7 +50,7 @@ flowchart LR
     Security -->|public auth request or valid JWT| Controller["Controller + request DTO"]
     Controller --> Service["Service"]
     Service --> Repository["Spring Data JPA repository"]
-    Repository --> H2[("H2 file database")]
+    Repository --> MySQL[("MySQL fundoo_notes")]
     Service --> Mail["Mail service"]
     Service --> Batch["Spring Batch import/export"]
     Service --> Cache["Redis label cache (optional)"]
@@ -65,18 +65,20 @@ erDiagram
     NOTE }o--o{ LABEL : tagged_with
 ```
 
-The gateway only routes requests. The backend verifies JWTs and checks note/label ownership. Controllers handle HTTP and DTOs; services hold the application logic; repositories access H2. The code uses packages `config`, `controller`, `dto`, `entity`, `exception`, `repository`, `service`, `batch`, and `aop`. No Lombok or mapper framework is required.
+The gateway only routes requests. The backend verifies JWTs and checks note/label ownership. Controllers handle HTTP and DTOs; services hold the application logic; repositories access MySQL. The code uses packages `config`, `controller`, `dto`, `entity`, `exception`, `repository`, `service`, `batch`, and `aop`. No Lombok or mapper framework is required.
 
 ## Run locally
 
-Requirements: Java 21 or newer and Maven, or IntelliJ IDEA's Maven tool window. No external database is required.
+Requirements: Java 21 or newer, Maven or IntelliJ IDEA's Maven tool window, and a running MySQL server with a `fundoo_notes` database.
+
+The connection URL is `jdbc:mysql://127.0.0.1:3306/fundoo_notes`, and the configured user is `root`. Set your own password with `FUNDOO_DB_PASSWORD`, or put `spring.datasource.password=your-password` in `application-local.properties` at the project root. That local file is ignored by Git and is not packaged in the JAR. On this computer, it uses the same MySQL password as the Hospital Management System project.
 
 ```bash
 git switch develop
 mvn spring-boot:run
 ```
 
-The backend starts at `http://localhost:8080`. H2 stores data in the ignored local `data/` directory. To start the optional gateway, leave the backend running and use another terminal:
+The backend starts at `http://localhost:8080`. The earlier H2 data in the local `data/` directory is not copied to MySQL automatically. To start the optional gateway, leave the backend running and use another terminal:
 
 ```bash
 cd fundoo-api-gateway
@@ -106,7 +108,7 @@ sequenceDiagram
     participant Security as Security filter chain
     participant Auth as AuthController
     participant Service as AuthService
-    participant DB as H2
+    participant DB as MySQL
     Client->>Security: POST /api/auth/register
     Security->>Auth: Public endpoint
     Auth->>Service: Validated registration DTO
@@ -214,7 +216,8 @@ flowchart TD
 
 | Feature | Default | Optional setup / behavior |
 | --- | --- | --- |
-| H2 | Local file database | No external database |
+| MySQL | `fundoo_notes` database on `127.0.0.1:3306` | Local password file or `FUNDOO_DB_PASSWORD` |
+| H2 | In-memory database for automated tests | No separate test database server |
 | Mail | Log email contents for learning | Configure Spring Mail host, port, credentials, and `fundoo.mail.from` for SMTP |
 | Reminders | Scheduler checks every 60 seconds and sends directly | `rabbit` profile queues IDs for a consumer |
 | Redis | No label cache | `redis` profile uses Redis at `localhost:6379`; cache is evicted on label create/delete |
@@ -232,7 +235,7 @@ flowchart LR
     ImportController --> ImportJob["Spring Batch import job"]
     ImportJob --> Parse["Parse and validate rows"]
     Parse --> Save["Save notes for signed-in user"]
-    Notes["Owned active notes in H2"] --> ExportJob["Spring Batch export job"]
+    Notes["Owned active notes in MySQL"] --> ExportJob["Spring Batch export job"]
     ExportJob --> Download["CSV download"]
 ```
 

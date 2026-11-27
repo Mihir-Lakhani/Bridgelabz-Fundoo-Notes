@@ -1,5 +1,6 @@
 package com.bridgelabz.fundoonotes;
 
+import com.bridgelabz.fundoonotes.repository.AccountTokenRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class NoteCrudTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
+    @Autowired AccountTokenRepository tokens;
 
     @Test
     void noteCrudIsLimitedToItsOwner() throws Exception {
@@ -142,6 +144,12 @@ class NoteCrudTest {
         mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Student\",\"email\":\"" + email + "\",\"password\":\"password123\"}"))
                 .andExpect(status().isCreated());
+        String verifyToken = tokens.findAll().stream()
+                .filter(token -> token.getUser().getEmail().equals(email))
+                .findFirst().orElseThrow().getValue();
+        mvc.perform(post("/api/auth/verify").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"token\":\"" + verifyToken + "\"}"))
+                .andExpect(status().isNoContent());
         String response = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"" + email + "\",\"password\":\"password123\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

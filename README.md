@@ -1,6 +1,6 @@
 # Fundoo Notes
 
-A Spring Boot backend for personal notes. The project follows small use cases so each feature can be studied on its own. Application code is on [develop](https://github.com/Mihir-Lakhani/Bridgelabz-Fundoo-Notes/tree/develop); `main` contains this guide only.
+A Spring Boot backend for personal notes. The project follows small use cases so each feature can be studied on its own. Application code is on [develop](https://github.com/Mihir-Lakhani/Bridgelabz-Fundoo-Notes-Backend/tree/develop); `main` contains this guide only.
 
 ## At a glance
 
@@ -10,21 +10,22 @@ A Spring Boot backend for personal notes. The project follows small use cases so
 | Backend | Spring Boot 4.1.2, Spring MVC, Spring Security |
 | Database | MySQL `fundoo_notes` with Spring Data JPA; H2 for tests |
 | Authentication | BCrypt passwords and two-hour HS256 JWTs |
-| Optional integrations | SMTP, Redis, RabbitMQ |
+| Email | SMTP required for registration and verification |
+| Optional integrations | Redis, RabbitMQ |
 | Other features | Spring Batch CSV import/export, scheduled jobs, Spring AOP, Spring Cloud Gateway |
 | Backend port | `8080` |
 | Gateway port | `8081` |
 
 ## Use cases
 
-Each rebuilt UC has its own `feature/uc-*` branch from `develop` and a non-fast-forward merge back into `develop`. The [earlier draft](https://github.com/Mihir-Lakhani/Bridgelabz-Fundoo-Notes/tree/archive/first-fundoo-draft) is kept separately.
+Each rebuilt UC has its own `feature/uc-*` branch from `develop` and a non-fast-forward merge back into `develop`. The [earlier draft](https://github.com/Mihir-Lakhani/Bridgelabz-Fundoo-Notes-Backend/tree/archive/first-fundoo-draft) is kept separately.
 
 | UC | Feature | What it adds | Status |
 | --- | --- | --- | --- |
 | 01 | Registration | Validate user details, reject duplicate email, hash password with BCrypt | Complete |
 | 02 | Login and JWT | Authenticate credentials and issue a signed access token | Complete |
 | 03 | Profile | Read and update the signed-in user's name | Complete |
-| 04 | Account recovery | Email verification and one-use password reset tokens | Complete; SMTP optional |
+| 04 | Account recovery | Email verification required for login and one-use password reset tokens | Complete; configure SMTP |
 | 05 | Notes CRUD | Create, list, read, update, and soft-delete owned notes | Complete |
 | 06 | Note lifecycle | Pin, archive, trash, restore, and permanently delete | Complete |
 | 07 | Search | Find active notes by title or description | Complete |
@@ -80,6 +81,20 @@ mvn spring-boot:run
 
 The backend starts at `http://localhost:8080`. The earlier H2 data in the local `data/` directory is not copied to MySQL automatically. To start the optional gateway, leave the backend running and use another terminal:
 
+Before registering users, configure SMTP in the ignored `application-local.properties` file at the project root. For Gmail, use your Gmail address and a Google app password (with 2-Step Verification enabled):
+
+```properties
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-address@gmail.com
+spring.mail.password=your-app-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+fundoo.mail.from=your-address@gmail.com
+```
+
+Keep the app password out of Git. Registration returns `503` and saves no account if the email cannot be sent. The verification link points to `http://localhost:5173/verify` by default; set `fundoo.frontend.url` if your frontend uses a different origin. Automated tests use a log-only mail setting; the normal app requires SMTP for registration.
+
 ```bash
 cd fundoo-api-gateway
 mvn spring-boot:run
@@ -113,9 +128,13 @@ sequenceDiagram
     Security->>Auth: Public endpoint
     Auth->>Service: Validated registration DTO
     Service->>DB: Save user with BCrypt password
+    Service->>Service: Email one-use verification link
     Service-->>Auth: New user ID
     Auth-->>Client: 201 with user ID
-    Note over Service: Verification token is emailed or logged
+    Client->>Security: POST /api/auth/verify with token from link
+    Security->>Auth: Public endpoint
+    Auth->>DB: Mark email verified
+    Auth-->>Client: 204
     Client->>Security: POST /api/auth/login
     Security->>Auth: Public endpoint
     Auth->>Service: Email and password
@@ -128,7 +147,7 @@ sequenceDiagram
     DB-->>Client: Only this user's notes
 ```
 
-Public endpoints are the five `POST /api/auth/*` endpoints below. Every user, label, and note endpoint needs `Authorization: Bearer <token>`. A token expires two hours after login. Email verification is recorded, but login does not require it.
+The six `POST /api/auth/*` endpoints below are public. Every user, label, and note endpoint needs `Authorization: Bearer <token>`. A token expires two hours after login. Login rejects unverified accounts with `403`.
 
 ## API reference
 
@@ -139,12 +158,13 @@ Public endpoints are the five `POST /api/auth/*` endpoints below. Every user, la
 | POST | `/api/auth/register` | `{"name":"Mihir","email":"mihir@example.com","password":"password123"}` | `201` and new user ID |
 | POST | `/api/auth/login` | Email and password | `200` and JWT token |
 | POST | `/api/auth/verify` | `{"token":"..."}` | `204`; marks email verified |
+| POST | `/api/auth/resend-verification` | `{"email":"mihir@example.com"}` | `202`; sends a new link if the account is unverified |
 | POST | `/api/auth/forgot-password` | `{"email":"mihir@example.com"}` | `202` for known or unknown email |
 | POST | `/api/auth/reset-password` | `{"token":"...","password":"newpassword123"}` | `204`; changes password |
 | GET | `/api/users/me` | Bearer token | ID, name, email, verification flag |
 | PUT | `/api/users/me` | `{"name":"New name"}` | Updated profile |
 
-Verification and reset tokens expire after 15 minutes and are removed after one use. Registration sends a verification token. Without SMTP, development emails and tokens appear in application logs.
+Verification and reset tokens expire after 15 minutes and are removed after one use. Registration emails a verification link; open it before logging in. A link confirms control of the mailbox that received it. For local tests only, `fundoo.mail.log-only=true` logs emails instead of sending them.
 
 ### Notes, labels, and reminders
 
@@ -172,7 +192,7 @@ Verification and reset tokens expire after 15 minutes and are removed after one 
 
 An unknown or another user's note or label returns `404`. Invalid input returns `400`; missing or invalid authentication returns `401`. Deleting a note through `DELETE /api/notes/{id}` is a soft delete.
 
-### Example: register, login, create
+### Example: register, verify, login, create
 
 ```http
 POST /api/auth/register
@@ -180,6 +200,8 @@ Content-Type: application/json
 
 {"name":"Mihir","email":"mihir@example.com","password":"password123"}
 ```
+
+Open the verification link in the email. The frontend sends its token to `POST /api/auth/verify`. Then log in:
 
 ```http
 POST /api/auth/login
@@ -209,16 +231,15 @@ flowchart TD
     Direct --> Output{"SMTP configured?"}
     Consume --> Output
     Output -->|Yes| Email["Send email"]
-    Output -->|No| Log["Log development email"]
+    Output -->|No| Fail["Fail to deliver email"]
     Email --> Sent["Mark reminder sent"]
-    Log --> Sent
 ```
 
 | Feature | Default | Optional setup / behavior |
 | --- | --- | --- |
 | MySQL | `fundoo_notes` database on `127.0.0.1:3306` | Local password file or `FUNDOO_DB_PASSWORD` |
 | H2 | In-memory database for automated tests | No separate test database server |
-| Mail | Log email contents for learning | Configure Spring Mail host, port, credentials, and `fundoo.mail.from` for SMTP |
+| Mail | SMTP required for registration | Configure Spring Mail host, port, credentials, and `fundoo.mail.from`; tests use log-only mode |
 | Reminders | Scheduler checks every 60 seconds and sends directly | `rabbit` profile queues IDs for a consumer |
 | Redis | No label cache | `redis` profile uses Redis at `localhost:6379`; cache is evicted on label create/delete |
 | RabbitMQ | Not used | `rabbit` profile uses RabbitMQ at `localhost:5672` |
@@ -248,4 +269,4 @@ mvn clean test
 mvn -f fundoo-api-gateway/pom.xml test
 ```
 
-The backend suite has 16 tests covering registration, login, recovery, profile, note ownership and lifecycle, search, labels, reminders, Trash cleanup, CSV round-tripping, Redis configuration, and AOP. The gateway test starts a small test backend and confirms forwarding of the API path and bearer header. These tests do not start a live SMTP, Redis, or RabbitMQ server.
+The backend tests cover registration, required email verification, login, recovery, profile, note ownership and lifecycle, search, labels, reminders, Trash cleanup, CSV round-tripping, Redis configuration, and AOP. The gateway test starts a small test backend and confirms forwarding of the API path and bearer header. These tests do not start a live SMTP, Redis, or RabbitMQ server.

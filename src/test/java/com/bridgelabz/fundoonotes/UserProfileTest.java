@@ -1,5 +1,6 @@
 package com.bridgelabz.fundoonotes;
 
+import com.bridgelabz.fundoonotes.repository.AccountTokenRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserProfileTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
+    @Autowired AccountTokenRepository tokens;
 
     @Test
     void onlyAuthenticatedUserCanReadAndUpdateOwnProfile() throws Exception {
@@ -26,6 +28,10 @@ class UserProfileTest {
                 .content("""
                         {"name":"First","email":"profile@example.com","password":"password123"}
                         """)).andExpect(status().isCreated());
+        String verifyToken = tokens.findAll().getFirst().getValue();
+        mvc.perform(post("/api/auth/verify").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"token\":\"" + verifyToken + "\"}"))
+                .andExpect(status().isNoContent());
         String loginResponse = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"email":"profile@example.com","password":"password123"}

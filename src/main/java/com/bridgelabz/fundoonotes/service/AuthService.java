@@ -4,6 +4,7 @@ import com.bridgelabz.fundoonotes.dto.RegisterRequest;
 import com.bridgelabz.fundoonotes.dto.LoginRequest;
 import com.bridgelabz.fundoonotes.entity.AppUser;
 import com.bridgelabz.fundoonotes.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +35,7 @@ public class AuthService {
         this.accountService = accountService;
     }
 
+    @Transactional
     public Long register(RegisterRequest request) {
         if (users.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already registered");

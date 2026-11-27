@@ -27,7 +27,7 @@ public class RabbitReminderConsumer {
             return;
         }
         mail.send(note.getOwner().getEmail(), "Note reminder", note.getTitle());
-        note.setReminderSent(true);
+        note.markReminderSent();
         notes.save(note);
     }
 }

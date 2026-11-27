@@ -61,6 +61,11 @@ public class Note {
         this.reminderQueued = false;
     }
     public void setReminderSent(boolean reminderSent) { this.reminderSent = reminderSent; }
+    public void markReminderSent() {
+        this.reminderAt = null;
+        this.reminderSent = true;
+        this.reminderQueued = false;
+    }
     public void setReminderQueued(boolean reminderQueued) { this.reminderQueued = reminderQueued; }
     public void setPinned(boolean pinned) { this.pinned = pinned; }
     public void setArchived(boolean archived) { this.archived = archived; }

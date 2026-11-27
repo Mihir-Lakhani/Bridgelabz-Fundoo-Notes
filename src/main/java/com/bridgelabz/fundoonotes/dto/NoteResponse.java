@@ -13,6 +13,6 @@ public record NoteResponse(Long id, String title, String description,
         return new NoteResponse(note.getId(), note.getTitle(), note.getDescription(),
                 note.isPinned(), note.isArchived(), note.isTrashed(),
                 note.getLabels().stream().map(Label::getName).collect(Collectors.toSet()),
-                note.getReminderAt());
+                note.isReminderSent() ? null : note.getReminderAt());
     }
 }

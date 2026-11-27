@@ -2,6 +2,7 @@ package com.bridgelabz.fundoonotes;
 
 import com.bridgelabz.fundoonotes.entity.AppUser;
 import com.bridgelabz.fundoonotes.entity.Note;
+import com.bridgelabz.fundoonotes.dto.NoteResponse;
 import com.bridgelabz.fundoonotes.repository.NoteRepository;
 import com.bridgelabz.fundoonotes.repository.UserRepository;
 import com.bridgelabz.fundoonotes.service.ReminderNotificationService;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:notify_test;DB_CLOSE_DELAY=-1")
@@ -30,7 +32,11 @@ class ReminderNotificationTest {
 
         reminders.sendDueReminders();
 
-        assertTrue(notes.findById(id).orElseThrow().isReminderSent());
+        Note sent = notes.findById(id).orElseThrow();
+        assertTrue(sent.isReminderSent());
+        assertNull(sent.getReminderAt());
+        reminders.sendDueReminders();
+        assertNull(notes.findById(id).orElseThrow().getReminderAt());
     }
 
     @Test
@@ -42,6 +48,18 @@ class ReminderNotificationTest {
 
         new RabbitReminderConsumer(notes, mail).sendReminder(id.toString());
 
-        assertTrue(notes.findById(id).orElseThrow().isReminderSent());
+        Note sent = notes.findById(id).orElseThrow();
+        assertTrue(sent.isReminderSent());
+        assertNull(sent.getReminderAt());
+    }
+
+    @Test
+    void previouslySentReminderIsHiddenFromApiResponse() {
+        AppUser user = users.save(new AppUser("Mihir", "old-reminder@example.com", "encoded-password"));
+        Note oldNote = new Note("Old reminder", null, user);
+        oldNote.setReminderAt(Instant.now().minusSeconds(60));
+        oldNote.setReminderSent(true);
+
+        assertNull(NoteResponse.from(oldNote).reminderAt());
     }
 }
